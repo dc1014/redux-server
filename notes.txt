@@ -1,0 +1,62 @@
+App code - redux for client and server
+
+State - immutable data strutures
+
+DESIGN
+
+start with application state data structure (describes what is going on)
+
+In Ember / Backbone, state is in Model.
+
+In Angular, state is in Factories and Services.
+
+In Redux, state is a single tree.
+
+- This state is isolated from behavior. State is pure data...ine one place.
+
+In the toy voting app, a collection of 6 movies.
+
+Once a vote begins, distinguish to what is being voted on. A vote entry in the state, which holds the pair. The pair is removed from the entries collection.
+
+As votes come in, tally of votes should be stored via another data structure inside the vote.
+
+Loser is thrown away, and winner is moved to entry collection as last item.
+
+States will cycle until there is a final winner
+
+----------------
+
+The tree is immutable. The next state is another tree that is generated. Stored in two separate and independent trees.
+
+You get to one tree from the previous by applying a function that takes the current state and returns a new one
+
+BENEFITS:
+-- Easier to hold onto entire application state
+-- Undo/redo is "free" O(1)
+-- History can be serialized and saved, or sent to storage
+
+-- Simplication of code with pure functions  (functions that take and return data with no side effects)
+
+# MANIPULATING IMMUTABLE DATA
+
+Immutable.js provides helper methods to allow manipulation of nested properties.
+
+function addMovie(currentState, movie) {
+  return currentState.update('movies', movies => movies.push(movie));
+}
+
+where currentState is an Immutable.js map datatype. Update is a method on an Immutable.js data structure which takes a key of a map (maybe others?) as its first arugment and callback whose argument is the value of that key. The callback returns a new tree with the edit applied.
+
+USEFUL METHODS
+Map.set(data, Map);
+List.get(key).push(List)
+state.updateIn(array of keys for a nested object ending with value to operate on, default value, new value)
+    .getIn([keys], initial value) - similar to update in
+
+
+
+
+
+
+
+
