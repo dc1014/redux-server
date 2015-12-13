@@ -47,16 +47,93 @@ function addMovie(currentState, movie) {
 
 where currentState is an Immutable.js map datatype. Update is a method on an Immutable.js data structure which takes a key of a map (maybe others?) as its first arugment and callback whose argument is the value of that key. The callback returns a new tree with the edit applied.
 
-USEFUL METHODS
+# USEFUL METHODS
 Map.set(data, Map);
 List.get(key).push(List)
 state.updateIn(array of keys for a nested object ending with value to operate on, default value, new value)
     .getIn([keys], initial value) - similar to update in
 
 
+# ACTIONS AND REDUCERS
 
+In Redux, the pure functions are not called directly. There is an intermediate layer between the framework and the functions. This is called an ACTION.
 
+An ACTION is a simple data structure that indicates a change should occur in your app state. Essentially, a function call wrapped within an object.
 
+By convention, every ACTION has a TYPE attribute that describes which operation the action is for.
 
+Each action may also carry additional attributes. Some examples:
 
+{type: 'SET_ENTRIES', ['Trainspotting', '28 Days Later']}
+{type: 'NEXT'}
+{type: 'VOTE', entry: 'Trainspotting'}
 
+A way must be devised to turn these actions into function calls. For example, given the VOTE action, the following call should be made:
+
+// This action
+let voteAction = {type: 'VOTE', entry: 'Trainspotting'}
+
+// Should cause this to happen
+return vote(state, voteAction.entry);
+
+The REDUCER is a generic function that takes an ACTION along with the current STATE, and invokes the CORE FUNCTION that matches the ACTION.
+
+If a REDUCER is called with an UNDEFINED STATE, they know how to INITIALIZE it with a meaningful value
+
+Given a COLLECTION of past ACTIONS, you can actually just REDUCE that COLLECTION into the CURRENT STATE. This is why the function is called a reducer - it fulfills the contract of a reduce callback function
+
+* NOTE: Redux requires plain objects for an actions collection, and not immutable data structures
+
+# REDUCER COMPOSITION
+
+Core functionality is that each function takes whole state of app and returns the whole, next state.
+
+- This pattern has issue with large apps, because if each op needs to be aware of structure of whole state, app becomes brittle. Changing shape of state requires lots of changes.
+
+- Better pattern is to make operations work on smallest piece (or subtree) of state possible. In practice, the MAIN REDUCER only hands the part of the state needed to the LOWER REDUCER(S) functions.
+
+See - http://rackt.github.io/redux/docs/basics/Reducers.html for more details
+
+# REDUX STORE
+
+What happens when a collection of actions arrives in an asynchronous fashion, a.k.a. reality.
+
+An object can be used to store the state of the application over time. This is the REDUX STORE.
+
+The STORE is initialized with a REDUCER FUNCTION, such as the MAIN one previously created, i.e.
+
+import {createStore} from 'redux';
+
+const store = createStore(reducer);
+
+Actions can be DISPATCHED to the STORE. The STORE will use the REDUCER to apply the actions to the current STATE, and store the resulting NEXT STATE, i.e.
+
+store.dispatch({type: 'NEXT'});
+store.getState();
+
+## Notes:
+- The store is the only variable you need in a Redux. The rest are constants and immutable values.
+-
+
+# SOCKET IO SERVER AND REDUX
+
+The socket.io SERVER is used to serve the REDUX STATE CONTAINER.
+
+The SERVER can emit events, such as the current tally of votes, or what is being voted on.
+
+How do we know something has changed? By SUBSCRIBING to a REDUX STORE, you can receive changes as they are emitted. The REDUX STORE will call a function after every action it applies, when the state has potentially changed (essentially a callback to state changes within the STORE).
+
+Socket.IO servers are Server objects and require use of its attach method to bind the server to a port. The server, after construction and attachment, is listening.
+
+Events
+Clients will subscribe to the store, and on the connection event in the Socket, the Server will emit the state. Clients will emit actions that the Server is listening for. Note bridge must be secured in production (http://vertx.io/docs/vertx-web/java/#_securing_the_bridge)
+
+The server in this application behaves according to the following:
+
+- A client sends an action to the server
+- Server hands the action to the Redux Store
+- The store calls the reducer and the reducer executes the logic relates to the action.
+- The store updates its state based on the return value of the reducer
+- The Store executes the listener function subscribed by the Server.
+- The server emits a 'state' event.
+- All connected clients - including the one that initiated the original action - receive the new state.
